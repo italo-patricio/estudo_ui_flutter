@@ -78,7 +78,7 @@ class _MyListDataWithStatePageState extends State<MyListDataWithStatePage> {
 
   Widget buildListData() {
     return StreamBuilder<StateBase>(
-      stream: _viewModel.currentState,
+      stream: _viewModel.currentState.output,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -112,14 +112,14 @@ class _MyListDataWithStatePageState extends State<MyListDataWithStatePage> {
         }
 
         return ListView.builder(
-          itemCount: _viewModel.currentDataList.length,
+          itemCount: _viewModel.currentData.current!.length,
           shrinkWrap: true,
           physics: const AlwaysScrollableScrollPhysics(),
           controller: _scrollController,
           itemBuilder: (context, index) {
             Widget? widgetAppend;
-            if (index == (_viewModel.currentDataList.length - 1) &&
-                _viewModel.currentDataList.length > 9) {
+            if (index == (_viewModel.currentData.current!.length - 1) &&
+                _viewModel.currentData.current!.length > 9) {
               if (snapshot.data is LoadingMoreState) {
                 widgetAppend = const Center(child: CircularProgressIndicator());
               }
@@ -132,7 +132,7 @@ class _MyListDataWithStatePageState extends State<MyListDataWithStatePage> {
 
             return Column(
               children: [
-                buildListItem(_viewModel.currentDataList, index),
+                buildListItem(_viewModel.currentData.current!, index),
                 widgetAppend ?? Container()
               ],
             );
