@@ -4,22 +4,23 @@ import 'package:estudo_ui_flutter/core/states/state.dart';
 
 class ListDataWithStateViewModel {
   final StreamController<StateBase> _currentState =
-      StreamController<StateBase>();
-  
-  final StreamController<List<DataSuccess>> _currentDataState =
-      StreamController<List<DataSuccess>>();
+      StreamController<StateBase>.broadcast();
 
+  final StreamController<List<DataSuccess>> _currentDataState =
+      StreamController<List<DataSuccess>>.broadcast();
+
+  StateBase _currentStateSync = InitialState('');
   final List<DataSuccess> _currentData = [];
 
   ListDataWithStateViewModel() {
-    _currentState.sink.add(InitialState('Estado inicial :D'));
-    
+    setState(InitialState('Estado inicial :D'));
+    enableObservable();
   }
 
   Stream<StateBase> get currentState => _currentState.stream;
-  
+
   Stream<List<DataSuccess>> get currentData => _currentDataState.stream;
-  
+
   List<DataSuccess> get currentDataList => _currentData;
 
   dispose() {
@@ -28,16 +29,16 @@ class ListDataWithStateViewModel {
 
   enableObservable() {
     _currentState.stream
-    .where((element) => element is SuccessState)
-    .listen((event) {
-        final success = event as SuccessState;
-        _currentData.addAll(success.data as List<DataSuccess>);
-        _currentDataState.sink.add(_currentData);
+        .where((element) => element is SuccessState)
+        .listen((event) {
+      final success = event as SuccessState;
+      _currentData.addAll(success.data as List<DataSuccess>);
+      _currentDataState.sink.add(_currentData);
     });
   }
 
   getData() async {
-    _currentState.sink.add(LoadingState('Carregando...'));
+    setState(LoadingState('Carregando...'));
     await Future.delayed(const Duration(seconds: 3));
 
     final data = [
@@ -46,32 +47,42 @@ class ListDataWithStateViewModel {
     ];
 
     _currentData.clear();
-    _currentState.sink.add(SuccessState(data));
-    _currentData.addAll(data);
+    setState(SuccessState(data));
   }
 
+  bool get isLoadingMore => (_currentStateSync is NoDataToLoadState ||
+      _currentStateSync is LoadingState ||
+      _currentStateSync is LoadingMoreState);
+
   getLoadMore() async {
-    _currentState.sink.add(LoadingMoreState('Carregando mais...'));
+    if (isLoadingMore) return;
+    print('getLoadMore processing');
+
+    setState(LoadingMoreState('Carregando mais...'));
     await Future.delayed(const Duration(seconds: 3));
 
-    if(_currentData.length > 30) {
-      _currentState.sink.add(NoDataToLoadState('Nada mais para exibir!'));
+    if (_currentData.length > 100) {
+      setState(NoDataToLoadState('Nada mais para exibir!'));
     } else {
       final data = [
         ...List.generate(
             10, (index) => DataSuccess(name: 'Italo - $index', age: index))
       ];
 
-      _currentState.sink.add(SuccessState(data));
-      _currentData.addAll(data);
+      setState(SuccessState(data));
+      // _currentData.addAll(data);
     }
+  }
 
+  setState(StateBase state) {
+    _currentState.sink.add(state);
+    _currentStateSync = state;
   }
 
   getDataWithError() async {
-    _currentState.sink.add(LoadingState('Carregando...'));
+    setState(LoadingState('Carregando...'));
     await Future.delayed(const Duration(seconds: 3));
-    _currentState.sink.add(ErrorState('Deu ruim! :('));
+    setState(ErrorState('Deu ruim! :('));
   }
 }
 
